@@ -5,6 +5,8 @@
 
 > 复刻自 React Bits Pro 的 Lenticular Carousel 组件，并以原生 JS 重新架构。
 
+**👉 在线预览：https://smartaly.github.io/lenticular-carousel/** （GitHub Pages，打开即玩，无需安装）
+
 ## 效果预览
 
 - 鼠标在卡片上**由左至右平移**：竖纹光栅条随视角压缩 / 展开，彩虹光柱跟随游走，底部文字随透光孔径打开而显现
@@ -139,3 +141,5 @@ card.destroy();                  // 销毁并退出 ticker
 ### English Summary
 
 A zero-dependency vanilla-JS reimplementation of the React Bits Pro "Lenticular Carousel": a 3D lenticular-glass card effect with microlens fluted slats, holographic rainbow foil highlights, pointer-driven 3D tilt and text reveal. The effect layer (`LenticularCard` + pure `LenticularRenderer`) and the layout layer (`Carousel`) are fully decoupled and usable independently. Run `npm start` and open http://localhost:5173.
+
+Live demo: https://smartaly.github.io/lenticular-carousel/
