@@ -21,9 +21,10 @@
       transform-style: preserve-3d;
     }
     /* Glass slat card transitions */
+    /* 注意：will-change 里不能出现 opacity / filter 等分组属性——
+       它们会强制 transform-style: flat，行内文字的 translateZ 纵深将全部失效 */
     .card-content {
-      will-change: transform, opacity, letter-spacing;
-      transition: opacity 0.15s ease-out;
+      will-change: transform, letter-spacing;
     }
     /* Custom scrollbar */
     ::-webkit-scrollbar {

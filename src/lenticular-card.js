@@ -50,6 +50,19 @@ const LERP_HOVER = 0.14;   // 悬停量跟随
 /** 静止判定阈值：指针与悬停量均收敛且无参数变更时跳过重绘 */
 const IDLE_EPSILON = 0.001;
 
+/**
+ * 文字三行的 Z 纵深（px），顺序为 [tag, title, desc]。
+ * 标题最近（视觉主角），描述次之，角标最远——卡片左右倾斜时三行产生
+ * 真实的透视视差分层，而不是整体硬切。
+ */
+const TEXT_LAYER_Z = [32, 64, 48];
+
+/** 文字三行各自的透明度系数（desc 保持原来的 0.8 弱化） */
+const TEXT_LAYER_OPACITY = [1, 1, 0.8];
+
+/** 分解视图下文字整体额外抬升的 Z 基准（与原版 content z=60 的意图一致） */
+const EXPLODED_TEXT_Z = 40;
+
 // ------------------------------------------------------------
 // LenticularRenderer — 纯渲染层
 // ------------------------------------------------------------
@@ -267,35 +280,42 @@ export class LenticularCard {
     root.style.width = `${CARD_WIDTH}px`;
     root.style.height = `${CARD_HEIGHT}px`;
 
+    // 注意：card-inner 上不能用 overflow-hidden——该属性在部分引擎（WebKit）
+    // 会强制 transform-style 扁平化，子层的 translateZ 纵深将全部失效。
+    // 圆角裁剪改由各图层自身的 rounded-[14px] 完成，行为全引擎一致。
     const inner = document.createElement('div');
-    inner.className = 'card-inner relative w-full h-full rounded-[14px] overflow-hidden preserve-3d transition-transform duration-75';
+    inner.className = 'card-inner relative w-full h-full rounded-[14px] preserve-3d transition-transform duration-75';
     inner.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.7)';
 
     // 1. 底层照片
     const img = document.createElement('img');
     img.src = image;
     img.alt = title;
-    img.className = 'card-bg absolute inset-0 w-full h-full object-cover transition-transform duration-100 ease-out';
+    img.className = 'card-bg absolute inset-0 w-full h-full object-cover rounded-[14px] transition-transform duration-100 ease-out';
     img.style.transform = 'scale(1.06)';
 
     // 2. 渐变遮罩（Scrim）
     const scrim = document.createElement('div');
-    scrim.className = 'card-scrim absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/5 pointer-events-none transition-opacity duration-300';
+    scrim.className = 'card-scrim absolute inset-0 rounded-[14px] bg-gradient-to-t from-black/90 via-black/35 to-black/5 pointer-events-none transition-opacity duration-300';
 
     // 3. 竖纹玻璃光栅与全息彩虹光束 Canvas 蒙层
     const canvas = document.createElement('canvas');
-    canvas.className = 'card-canvas absolute inset-0 w-full h-full pointer-events-none mix-blend-screen';
+    canvas.className = 'card-canvas absolute inset-0 w-full h-full rounded-[14px] pointer-events-none mix-blend-screen';
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
 
     // 4. 底部文字（位于灰色蒙层下方，随光栅展开自然显现）
+    //    preserve-3d：让三行文字各自的 translateZ 融入卡片的 3D 渲染上下文。
+    //    注意：容器上不能有 opacity<1（会强制扁平化，行内 translateZ 全部失效），
+    //    因此揭示透明度下沉到每一行自身（实测不影响行自身的 Z 定位）。
     const content = document.createElement('div');
-    content.className = 'card-content absolute bottom-0 left-0 right-0 p-5 z-20 pointer-events-none opacity-0';
-    content.style.opacity = '0';
+    content.className = 'card-content preserve-3d absolute bottom-0 left-0 right-0 p-5 z-20 pointer-events-none';
+    // 阴影一律用 text-shadow：drop-shadow(filter) 虽不影响元素自身 Z，
+    // 但会扁平化其子树，且与 3D 合成路径下行为不一致，统一避免。
     content.innerHTML = `
-      <div class="card-tag text-[10px] font-bold tracking-widest text-neutral-300 uppercase mb-1 drop-shadow">${tag}</div>
-      <h3 class="card-title text-xl font-bold tracking-tight text-white drop-shadow-md leading-tight">${title}</h3>
-      <p class="card-desc text-[11px] text-neutral-400 mt-1 opacity-80">${description}</p>`;
+      <div class="card-tag text-[10px] font-bold tracking-widest text-neutral-300 uppercase mb-1" style="opacity: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 1px 1px rgba(0,0,0,0.06)">${tag}</div>
+      <h3 class="card-title text-xl font-bold tracking-tight text-white leading-tight" style="opacity: 0; text-shadow: 0 4px 3px rgba(0,0,0,0.07), 0 2px 2px rgba(0,0,0,0.06)">${title}</h3>
+      <p class="card-desc text-[11px] text-neutral-400 mt-1" style="opacity: 0">${description}</p>`;
 
     // 5. 分解视图徽标
     const badge = document.createElement('div');
@@ -312,6 +332,12 @@ export class LenticularCard {
     this._ctx = canvas.getContext('2d');
     this._content = content;
     this._badge = badge;
+    // 三行文字引用，顺序与 TEXT_LAYER_Z 一一对应：[tag, title, desc]
+    this._textLayers = [
+      content.querySelector('.card-tag'),
+      content.querySelector('.card-title'),
+      content.querySelector('.card-desc'),
+    ];
   }
 
   _bindEvents() {
@@ -416,19 +442,27 @@ export class LenticularCard {
    * 文字揭示编排：与光栅开合同步。
    * 鼠标在左侧时竖条压缩、文字被遮蔽（低透明度 + 负字距）；
    * 鼠标右移时竖条展开、文字完全清晰呈现。
+   *
+   * 三行文字各自携带不同的 translateZ（TEXT_LAYER_Z）：卡片左右倾斜时，
+   * 近处的行视差位移大、远处的行位移小，形成真实的纵深分层。
+   * 透明度必须写在每一行上——容器上的 opacity<1 会强制扁平化，
+   * 行内 translateZ 将全部失效（实测结论）。
    */
   _applyText() {
     const { x: mx } = this._curr;
     const h = this._hoverAmount;
     const opacity = Math.max(0, Math.min(1, h * (0.05 + mx * 1.15)));
     const tracking = mx < 0.45 ? `${((mx - 0.45) * 4).toFixed(1)}px` : '0px';
-    const textX = (1 - mx) * -12 * h;
-    const textY = (1 - h) * 12;
+    const textX = ((1 - mx) * -12 * h).toFixed(1);
+    const textY = ((1 - h) * 12).toFixed(1);
+    const zBase = this._exploded ? EXPLODED_TEXT_Z : 0;
 
-    this._content.style.opacity = opacity.toFixed(3);
-    this._content.style.transform =
-      `translate3d(${textX.toFixed(1)}px, ${textY.toFixed(1)}px, ${this._exploded ? 60 : 10}px)`;
     this._content.style.letterSpacing = tracking;
+
+    this._textLayers.forEach((el, i) => {
+      el.style.opacity = (opacity * TEXT_LAYER_OPACITY[i]).toFixed(3);
+      el.style.transform = `translate3d(${textX}px, ${textY}px, ${TEXT_LAYER_Z[i] + zBase}px)`;
+    });
   }
 
   /** 销毁：退出共享 ticker 并移除 DOM */
