@@ -208,12 +208,13 @@ export class LenticularRenderer {
       const distToBeam = Math.abs(sx - beamCenterX) / (w * 0.35);
       const beamInfluence = Math.max(0, 1 - distToBeam) * edgeFade;
 
-      // A. 半透明玻璃 slat 身体：照亮处显著增亮，远处保持微弱玻璃质感
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + (0.05 + 0.13 * proximity) * hover})`;
+      // A. 半透明玻璃 slat 身体：全卡保持可见的玻璃基底（远处 ~0.10），
+      //    指针照亮处显著增亮（近处 ~0.26）——近亮远弱，但不消失
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + (0.10 + 0.14 * proximity) * hover})`;
       ctx.fillRect(sx, 0, sw, h);
 
       // B. 左缘棱镜微反射：光柱内捕捉彩虹着色，指针照亮处高光增强
-      const ridgeSpec = 0.07 + (0.15 + 0.85 * beamInfluence + 0.9 * proximity) * ridge;
+      const ridgeSpec = 0.07 + (0.28 + 0.85 * beamInfluence + 0.9 * proximity) * ridge;
       const tint = Math.max(beamInfluence, proximity) * hover;
       const r = Math.min(255, Math.floor(225 + 30 * Math.sin(u * 12 + dx * 2) * tint));
       const g = Math.min(255, Math.floor(230 + 25 * Math.sin(u * 12 + 2 + dx * 2) * tint));
@@ -298,17 +299,18 @@ export class LenticularCard {
     inner.className = 'card-inner relative w-full h-full rounded-[14px] preserve-3d transition-transform duration-75';
     inner.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.7)';
 
-    // 1. 底层照片
-    //    裁剪用 clip-path 而非父级 overflow-hidden：overflow 会强制
-    //    transform-style: flat，整棵子树（含三行文字的 translateZ 纵深）
-    //    全部失效；clip-path 只裁照片自身形状，不影响 3D 渲染上下文。
-    //    照片带 scale/translate 折射视差，四边必须被裁回圆角内。
-    const img = document.createElement('img');
-    img.src = image;
-    img.alt = title;
-    img.className = 'card-bg absolute inset-0 w-full h-full object-cover rounded-[14px] transition-transform duration-100 ease-out';
-    img.style.clipPath = 'inset(0 round 14px)';
-    img.style.transform = 'scale(1.06)';
+    // 1. 底层照片（背景图方案）
+    //    折射视差用 background-size(106~108%) + background-position 实现：
+    //    背景绘制永不溢出元素盒，从根上保证照片与蒙层尺寸一致。
+    //    （曾经的 <img> + transform:scale 方案：scale 会把 clip-path 裁好的
+    //    圆角矩形一并放大， hover 态照片视觉尺寸 281x400 vs 蒙层 260x370，
+    //    四边各露出 10-15px 无蒙层照片——即「蒙层四周有 padding」的根因。）
+    const photo = document.createElement('div');
+    photo.className = 'card-photo absolute inset-0 rounded-[14px] transition-transform duration-100 ease-out';
+    photo.style.backgroundImage = `url("${image}")`;
+    photo.style.backgroundSize = '106%';
+    photo.style.backgroundPosition = 'center';
+    photo.style.backgroundRepeat = 'no-repeat';
 
     // 2. 渐变遮罩（Scrim）
     const scrim = document.createElement('div');
@@ -341,12 +343,12 @@ export class LenticularCard {
     badge.className = 'exploded-badge hidden absolute top-3 right-3 px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/80 text-white z-30 shadow';
     badge.textContent = `Card #${index + 1}`;
 
-    inner.append(img, scrim, canvas, content, badge);
+    inner.append(photo, scrim, canvas, content, badge);
     root.appendChild(inner);
 
     this._root = root;
     this._inner = inner;
-    this._img = img;
+    this._photo = photo;
     this._canvas = canvas;
     this._ctx = canvas.getContext('2d');
     this._content = content;
@@ -444,15 +446,21 @@ export class LenticularCard {
     if (this._exploded) {
       this._inner.style.transform =
         `perspective(1200px) rotateX(${rotX - 10}deg) rotateY(${rotY + 25}deg) scale(${scale})`;
-      this._img.style.transform = 'translateZ(-30px) scale(1.05)';
+      this._photo.style.transform = 'translateZ(-30px)';
+      this._photo.style.backgroundSize = '105%';
+      this._photo.style.backgroundPosition = 'center';
       this._canvas.style.transform = 'translateZ(25px)';
     } else {
       this._inner.style.transform =
         `perspective(1200px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(${this.params.lift * h}px) scale(${scale})`;
-      // 微透镜下的底层照片折射视差
+      // 微透镜下的底层照片折射视差：background-position 平移 + 背景放大，
+      // 照片始终被裁剪在自身元素盒内，与蒙层尺寸永远一致
       const parallaxX = -dx * this.params.refraction * 10;
       const parallaxY = -dy * this.params.refraction * 8;
-      this._img.style.transform = `translate(${parallaxX}px, ${parallaxY}px) scale(1.08)`;
+      this._photo.style.transform = 'none';
+      this._photo.style.backgroundSize = h > 0.001 ? '108%' : '106%';
+      this._photo.style.backgroundPosition =
+        `calc(50% + ${parallaxX.toFixed(1)}px) calc(50% + ${parallaxY.toFixed(1)}px)`;
       this._canvas.style.transform = 'translateZ(0px)';
     }
   }
