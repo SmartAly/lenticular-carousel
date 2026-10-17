@@ -214,33 +214,31 @@ export class LenticularRenderer {
       ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + (0.10 + 0.14 * proximity) * hover})`;
       ctx.fillRect(sx, 0, sw, h);
 
-      // 高光条方向跟随 foilTilt（与彩虹光谱流向一致）：90°=竖直(原始)，0°=水平，30°=斜
+      // 高光条方向跟随 foilTilt（与彩虹光谱流向一致）：90°=竖直，0°=水平，30°=斜
+      // 注意：只有「高光条(B)」跟随彩虹倾斜；薯条本身（身体 A + 凹槽阴影 C）保持竖直，
+      // 这样竖直薯条结构清晰，高光条 subtle 地叠在上面跟随彩虹角度。
       const tiltRad = params.foilTilt * (Math.PI / 180);
       const cosT = Math.cos(tiltRad), sinT = Math.sin(tiltRad);
       const cy = h * 0.5;
       const halfLen = (w + h) * 0.75;
 
-      // B. 左缘棱镜高光条：沿 foilTilt 倾斜（与竖直薯条身体分离），光柱内捕捉彩虹着色，
-      //    指针照亮处高光增强——这是「薯条上的高光条」，跟随彩虹倾斜而非整条薯条倾斜
+      // B. 棱镜高光条：沿 foilTilt 倾斜的细线（「薯条上的高光条」），subtle 不喧宾夺主；
+      //    光柱内捕捉彩虹着色，指针照亮处高光增强
       const ridgeSpec = 0.07 + (0.28 + 0.85 * beamInfluence + 0.9 * proximity) * ridge;
       const tint = Math.max(beamInfluence, proximity) * hover;
       const r = Math.min(255, Math.floor(225 + 30 * Math.sin(u * 12 + dx * 2) * tint));
       const g = Math.min(255, Math.floor(230 + 25 * Math.sin(u * 12 + 2 + dx * 2) * tint));
-      ctx.strokeStyle = `rgba(${r}, ${g}, 255, ${Math.min(1, ridgeSpec * 1.3)})`;
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = `rgba(${r}, ${g}, 255, ${ridgeSpec * 0.65})`;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.moveTo(sx - halfLen * cosT, cy - halfLen * sinT);
       ctx.lineTo(sx + halfLen * cosT, cy + halfLen * sinT);
       ctx.stroke();
 
-      // C. 右缘凹槽阴影：方向同高光条（跟随 foilTilt），勾勒肋状边界；
+      // C. 右缘凹槽阴影：保持竖直（薯条边界竖直，勾勒竖直薯条结构）；
       //    指针照亮处凹槽变浅（光直射下棱镜边缘阴影弱化）
-      ctx.strokeStyle = `rgba(0, 0, 0, ${(0.05 + 0.16 * hover) * (1 - 0.5 * proximity)})`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(sx + sw - 1.2 - halfLen * cosT, cy - halfLen * sinT);
-      ctx.lineTo(sx + sw - 1.2 + halfLen * cosT, cy + halfLen * sinT);
-      ctx.stroke();
+      ctx.fillStyle = `rgba(0, 0, 0, ${(0.05 + 0.16 * hover) * (1 - 0.5 * proximity)})`;
+      ctx.fillRect(sx + sw - 1.2, 0, 1.2, h);
     }
     ctx.restore();
   }
