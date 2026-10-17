@@ -53,6 +53,7 @@ cards[0].setActive(true);
 const SLIDERS = [
   { key: 'strips', id: 'strips', format: (v) => Math.round(v) },
   { key: 'foil', id: 'foil', format: (v) => v.toFixed(2) },
+  { key: 'foilTilt', id: 'foilTilt', format: (v) => `${Math.round(v)}\u00B0` },
   { key: 'blur', id: 'blur', format: (v) => `${Math.round(v)}px` },
   { key: 'ridge', id: 'ridge', format: (v) => v.toFixed(2) },
   { key: 'refraction', id: 'refraction', format: (v) => v.toFixed(2) },

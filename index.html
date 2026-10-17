@@ -198,6 +198,16 @@
           <p class="text-[11px] text-neutral-500">薄膜干涉彩虹光谱高光亮度</p>
         </div>
 
+        <!-- Foil Tilt Angle -->
+        <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
+          <div class="flex justify-between items-center">
+            <label for="param-foilTilt" class="font-medium text-neutral-300">foilTilt (彩虹倾斜角度)</label>
+            <span id="val-foilTilt" class="font-mono text-purple-400 font-semibold">30°</span>
+          </div>
+          <input type="range" id="param-foilTilt" min="-90" max="90" step="1" value="30" class="w-full accent-purple-500 cursor-pointer">
+          <p class="text-[11px] text-neutral-500">彩虹光束倾斜角度（0=水平，90=竖直），鼠标只平移不旋转</p>
+        </div>
+
         <!-- Rainbow Blur -->
         <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
           <div class="flex justify-between items-center">
@@ -362,7 +372,7 @@ const card = new LenticularCard({
   tag: 'REPETITION',
   title: 'Concrete Chorus',
   description: 'Austin, Texas',
-  params: { strips: 56, foil: 0.5, blur: 36, ridge: 0.5, refraction: 0.32, tilt: 14, lift: 40, warping: 0.45 },
+  params: { strips: 56, foil: 0.5, blur: 36, ridge: 0.5, refraction: 0.32, tilt: 14, lift: 40, warping: 0.45, foilTilt: 30 },
   onHover: (hovered) =&gt; console.log('hover:', hovered),
   onActivate: () =&gt; console.log('clicked'),
 });

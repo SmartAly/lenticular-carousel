@@ -28,6 +28,7 @@ export const DEFAULT_PARAMS = {
   strips: 56,        // 微透镜光栅竖条数量
   foil: 0.50,        // 彩虹全息强度
   blur: 36,          // 彩虹高光高斯模糊半径（px）
+  foilTilt: 30,      // 彩虹光束倾斜角度（deg）：0=水平，90=竖直，可调调试
   ridge: 0.50,       // 棱镜边缘反光强度
   refraction: 0.32,  // 底层照片折射视差位移
   tilt: 14,          // 跟随鼠标的最大 3D 旋转倾角（deg）
@@ -104,7 +105,7 @@ export class LenticularRenderer {
     const edgeFade = Math.pow(Math.sin(Math.max(0, Math.min(1, mx)) * Math.PI), 2.2);
 
     ctx.clearRect(0, 0, w, h);
-    this._paintFoilBeam(ctx, w, h, mx, my, dx, hover, edgeFade, params);
+    this._paintFoilBeam(ctx, w, h, mx, my, hover, edgeFade, params);
     this._paintFlutedSlats(ctx, w, h, mx, dx, hover, edgeFade, params);
   }
 
@@ -114,10 +115,10 @@ export class LenticularRenderer {
    *    Pass 2 核心柔化光谱柱：紫→蓝→青→绿→黄→橙→品红 的薄膜干涉色谱；
    *    Pass 3 光源聚集处柔和径向高光。
    */
-  static _paintFoilBeam(ctx, w, h, mx, my, dx, hover, edgeFade, params) {
+  static _paintFoilBeam(ctx, w, h, mx, my, hover, edgeFade, params) {
     const beamCenterX = w * (0.10 + mx * 0.80);
     const halfSpan = w * (0.42 + 0.22 * params.foil) * 0.5;
-    const tiltRad = (-4 + dx * 10) * (Math.PI / 180); // 光柱跟随鼠标微仰角 -4deg ~ +6deg
+    const tiltRad = params.foilTilt * (Math.PI / 180); // 彩虹光束倾斜角度：由 foilTilt 参数控制（默认 30deg）
     const cosT = Math.cos(tiltRad);
     const sinT = Math.sin(tiltRad);
     const cy = h * 0.5;
