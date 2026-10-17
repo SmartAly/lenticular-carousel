@@ -20,12 +20,7 @@
 
 <br>
 
-<p>
-  <img src="./assets/cards/concrete-chorus.jpg" width="150" alt="Concrete Chorus"/>
-  <img src="./assets/cards/helix-pavilion.jpg" width="150" alt="Helix Pavilion"/>
-  <img src="./assets/cards/monolith-form.jpg"  width="150" alt="Monolith Form"/>
-  <img src="./assets/cards/prism-atrium.jpg"   width="150" alt="Prism Atrium"/>
-</p>
+<img src="./docs/hero-preview.jpg" width="760" alt="Lenticular Carousel 实拍预览 / Live preview"/>
 
 </div>
 
