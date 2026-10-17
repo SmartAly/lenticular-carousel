@@ -1,0 +1,20 @@
+{
+  "name": "lenticular-carousel",
+  "version": "1.0.0",
+  "description": "3D 光栅画交互动效：微透镜竖纹折射 + 全息彩虹渐变高光。零依赖 vanilla JS，动效模块与轮播布局完全解耦。",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  },
+  "keywords": [
+    "lenticular",
+    "carousel",
+    "3d",
+    "canvas",
+    "holographic",
+    "animation",
+    "vanilla-js"
+  ],
+  "license": "MIT"
+}

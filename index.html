@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full bg-neutral-950 text-neutral-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lenticular Carousel - 3D光栅画动效复刻</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    .perspective-container {
+      perspective: 1200px;
+    }
+    .preserve-3d {
+      transform-style: preserve-3d;
+    }
+    /* Glass slat card transitions */
+    .card-content {
+      will-change: transform, opacity, letter-spacing;
+      transition: opacity 0.15s ease-out;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-full flex flex-col bg-neutral-950 text-neutral-100 overflow-x-hidden">
+
+  <!-- Top Bar / Header -->
+  <header class="border-b border-neutral-800/80 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+        <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="18" rx="2"/>
+          <line x1="8" y1="3" x2="8" y2="21"/>
+          <line x1="16" y1="3" x2="16" y2="21"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-semibold tracking-wide text-neutral-100">Lenticular Carousel</h1>
+          <span class="text-[10px] font-medium tracking-wider uppercase px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">React Bits Pro 复刻</span>
+        </div>
+        <p class="text-xs text-neutral-400">3D 光栅画微透镜折射与全息彩虹渐变高光交互</p>
+      </div>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center gap-2.5">
+      <button id="toggle-layer-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-neutral-700 hover:border-neutral-500 bg-neutral-800/70 hover:bg-neutral-800 text-neutral-300 transition flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+          <polyline points="2 17 12 22 22 17"/>
+          <polyline points="2 12 12 17 22 12"/>
+        </svg>
+        <span id="layer-btn-text">图层分解视图</span>
+      </button>
+
+      <button id="open-code-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-neutral-900 hover:bg-neutral-200 transition flex items-center gap-1.5 shadow-sm">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="16 18 22 12 16 6"/>
+          <polyline points="8 6 2 12 8 18"/>
+        </svg>
+        <span>代码与原理</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Showcase Container -->
+  <main class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
+
+    <!-- Ambient Glow in Background -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
+      <div id="ambient-glow" class="w-[600px] h-[400px] rounded-full bg-purple-600/10 blur-[130px] transition-all duration-700"></div>
+    </div>
+
+    <!-- Carousel Section -->
+    <div class="w-full max-w-6xl mx-auto flex flex-col items-center z-10">
+
+      <!-- Interactive Carousel Stage -->
+      <div class="relative w-full py-8 flex items-center justify-center">
+
+        <!-- Navigation Buttons -->
+        <button id="prev-card-btn" aria-label="上一张卡片" class="absolute left-2 sm:left-6 z-30 w-11 h-11 rounded-full bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700/80 backdrop-blur-md flex items-center justify-center transition hover:scale-105 active:scale-95 shadow-xl">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+
+        <button id="next-card-btn" aria-label="下一张卡片" class="absolute right-2 sm:right-6 z-30 w-11 h-11 rounded-full bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700/80 backdrop-blur-md flex items-center justify-center transition hover:scale-105 active:scale-95 shadow-xl">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+
+        <!-- Carousel Track with 3D Perspective -->
+        <div id="carousel-track" class="perspective-container relative flex items-center justify-center gap-6 sm:gap-8 px-4 transition-all duration-500 ease-out min-h-[460px]">
+          <!-- Cards will be populated by JS -->
+        </div>
+
+      </div>
+
+      <!-- Pagination Indicators -->
+      <div class="flex items-center gap-2 mt-4" id="pagination-dots">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Interactive Instructions Hint -->
+      <div class="mt-6 flex items-center gap-4 text-xs text-neutral-400 bg-neutral-900/70 border border-neutral-800/80 rounded-full px-4 py-2 backdrop-blur-sm">
+        <span class="flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+            <path d="M13 13l6 6"/>
+          </svg>
+          鼠标在卡片上<strong>由左至右平移</strong>体验竖条与彩虹光斑动态变化
+        </span>
+        <span class="w-1 h-1 rounded-full bg-neutral-700"></span>
+        <span class="text-neutral-500">点击两侧卡片可居中切换</span>
+      </div>
+
+    </div>
+
+    <!-- Parameter Tuning Controls (Drawer/Panel) -->
+    <div class="w-full max-w-5xl mt-10 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 sm:p-6 backdrop-blur-md z-10 shadow-2xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-800/80 pb-4 mb-5">
+        <div>
+          <h2 class="text-sm font-semibold text-neutral-200 flex items-center gap-2">
+            <svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14"/>
+              <line x1="4" y1="10" x2="4" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12" y2="3"/>
+              <line x1="20" y1="21" x2="20" y2="16"/>
+              <line x1="20" y1="12" x2="20" y2="3"/>
+              <line x1="1" y1="14" x2="7" y2="14"/>
+              <line x1="9" y1="8" x2="15" y2="8"/>
+              <line x1="17" y1="16" x2="23" y2="16"/>
+            </svg>
+            官方参数实时调试面板 (Props Live Tuner)
+          </h2>
+          <p class="text-xs text-neutral-400 mt-0.5">直接调试并对比 React Bits Pro 官方参数与视觉呈现</p>
+        </div>
+
+        <!-- Presets Buttons -->
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+          <span class="text-neutral-500 text-[11px] mr-1">预设:</span>
+          <button id="preset-default" class="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-purple-300 font-medium border border-purple-500/30 transition">
+            官方默认 (Pro Default)
+          </button>
+          <button id="preset-foil" class="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition">
+            强彩虹全息 (Vibrant Foil)
+          </button>
+          <button id="preset-dense" class="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition">
+            致密光栅板 (80 Strips)
+          </button>
+          <button id="preset-subtle" class="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition">
+            极简微光 (Subtle Sheen)
+          </button>
+        </div>
+      </div>
+
+      <!-- Control Sliders Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+
+        <!-- Strips -->
+        <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
+          <div class="flex justify-between items-center">
+            <label for="param-strips" class="font-medium text-neutral-300">strips (竖条数量)</label>
+            <span id="val-strips" class="font-mono text-purple-400 font-semibold">56</span>
+          </div>
+          <input type="range" id="param-strips" min="16" max="96" step="2" value="56" class="w-full accent-purple-500 cursor-pointer">
+          <p class="text-[11px] text-neutral-500">柱面微透镜光栅条纹数量</p>
+        </div>
+
+        <!-- Foil Intensity -->
+        <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
+          <div class="flex justify-between items-center">
+            <label for="param-foil" class="font-medium text-neutral-300">foil (彩虹全息强度)</label>
+            <span id="val-foil" class="font-mono text-purple-400 font-semibold">0.50</span>
+          </div>
+          <input type="range" id="param-foil" min="0.0" max="1.0" step="0.05" value="0.50" class="w-full accent-purple-500 cursor-pointer">
+          <p class="text-[11px] text-neutral-500">薄膜干涉彩虹光谱高光亮度</p>
+        </div>
+
+        <!-- Rainbow Blur -->
+        <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
+          <div class="flex justify-between items-center">
+            <label for="param-blur" class="font-medium text-neutral-300">blur (彩虹高光模糊度)</label>
+            <span id="val-blur" class="font-mono text-purple-400 font-semibold">36px</span>
+          </div>
+          <input type="range" id="param-blur" min="10" max="64" step="2" value="36" class="w-full accent-purple-500 cursor-pointer">
+          <p class="text-[11px] text-neutral-500">高斯柔化扩散与色散边缘羽化</p>
+        </div>
+
+        <!-- Ridge -->
+        <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
+          <div class="flex justify-between items-center">
+            <label for="param-ridge" class="font-medium text-neutral-300">ridge (棱镜边缘反光)</label>
+            <span id="val-ridge" class="font-mono text-purple-400 font-semibold">0.50</span>
+          </div>
+          <input type="range" id="param-ridge" min="0.0" max="1.0" step="0.05" value="0.50" class="w-full accent-purple-500 cursor-pointer">
+          <p class="text-[11px] text-neutral-500">光栅竖条边缘微镜面反射亮度</p>
+        </div>
+
+        <!-- Refraction -->
+        <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
+          <div class="flex justify-between items-center">
+            <label for="param-refraction" class="font-medium text-neutral-300">refraction (折射位移)</label>
+            <span id="val-refraction" class="font-mono text-purple-400 font-semibold">0.32</span>
+          </div>
+          <input type="range" id="param-refraction" min="0.0" max="1.0" step="0.02" value="0.32" class="w-full accent-purple-500 cursor-pointer">
+          <p class="text-[11px] text-neutral-500">光线穿过微透镜时的折射与色散</p>
+        </div>
+
+        <!-- Tilt -->
+        <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
+          <div class="flex justify-between items-center">
+            <label for="param-tilt" class="font-medium text-neutral-300">tilt (3D 倾斜角度)</label>
+            <span id="val-tilt" class="font-mono text-purple-400 font-semibold">14°</span>
+          </div>
+          <input type="range" id="param-tilt" min="0" max="28" step="1" value="14" class="w-full accent-purple-500 cursor-pointer">
+          <p class="text-[11px] text-neutral-500">跟随鼠标的最大3D旋转倾角</p>
+        </div>
+
+        <!-- Lift -->
+        <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
+          <div class="flex justify-between items-center">
+            <label for="param-lift" class="font-medium text-neutral-300">lift (Z轴悬浮抬升)</label>
+            <span id="val-lift" class="font-mono text-purple-400 font-semibold">40px</span>
+          </div>
+          <input type="range" id="param-lift" min="0" max="80" step="5" value="40" class="w-full accent-purple-500 cursor-pointer">
+          <p class="text-[11px] text-neutral-500">激活卡片向屏幕前方的抬升距离</p>
+        </div>
+
+        <!-- Stripe Warping / Width Shift -->
+        <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
+          <div class="flex justify-between items-center">
+            <label for="param-warping" class="font-medium text-neutral-300">stripes shift (动态宽度)</label>
+            <span id="val-warping" class="font-mono text-purple-400 font-semibold">0.45</span>
+          </div>
+          <input type="range" id="param-warping" min="0.0" max="1.0" step="0.05" value="0.45" class="w-full accent-purple-500 cursor-pointer">
+          <p class="text-[11px] text-neutral-500">鼠标左右移动时光栅条纹宽度拉伸</p>
+        </div>
+
+        <!-- Inactive Dim -->
+        <div class="space-y-1.5 bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/60">
+          <div class="flex justify-between items-center">
+            <label for="param-dim" class="font-medium text-neutral-300">inactiveDim (非焦点暗度)</label>
+            <span id="val-dim" class="font-mono text-purple-400 font-semibold">0.55</span>
+          </div>
+          <input type="range" id="param-dim" min="0.1" max="1.0" step="0.05" value="0.55" class="w-full accent-purple-500 cursor-pointer">
+          <p class="text-[11px] text-neutral-500">两侧未激活卡片的亮度系数</p>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal: Code & Principle Explanation -->
+  <div id="code-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 sm:p-6">
+    <div class="bg-neutral-900 border border-neutral-800 w-full max-w-3xl max-h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-neutral-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-neutral-100">动效原理剖析与模块用法</h3>
+            <p class="text-xs text-neutral-400">为什么会出现竖条和彩虹高光？如何直接用于项目？</p>
+          </div>
+        </div>
+        <button id="close-code-btn" class="text-neutral-400 hover:text-white p-1 rounded-lg hover:bg-neutral-800 transition">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Tabs -->
+      <div class="flex border-b border-neutral-800 px-5 text-xs font-medium">
+        <button id="tab-principle-btn" class="py-3 px-3 border-b-2 border-purple-500 text-purple-400">动效核心原理解析</button>
+        <button id="tab-react-btn" class="py-3 px-3 border-b-2 border-transparent text-neutral-400 hover:text-neutral-200">JavaScript 模块用法</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 overflow-y-auto space-y-4 text-xs leading-relaxed text-neutral-300">
+
+        <!-- Tab 1: Principles -->
+        <div id="tab-principle-content" class="space-y-4">
+          <div class="bg-neutral-950/60 p-4 rounded-xl border border-neutral-800 space-y-2">
+            <h4 class="font-semibold text-neutral-100 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+              1. 灰色蒙层条的物理本质：微透镜竖纹光栅玻璃
+            </h4>
+            <p class="text-neutral-400">
+              这些灰色蒙层竖条本质上就是一层<strong>微型柱面透镜阵列（Reeded / Lenticular Fluted Glass）</strong>。
+              <br>• <strong>静止态（未悬停）：</strong> 灰色蒙层依然存在，但处于高透明度的轻微纹理状态（近乎隐形，只保留一层高雅的物理玻璃微反光）。
+              <br>• <strong>文字在玻璃下方：</strong> 文字本身并无竖线，是位于竖纹玻璃下方的独立内容，其可见度直接受光栅玻璃的开合折射控制。
+            </p>
+          </div>
+
+          <div class="bg-neutral-950/60 p-4 rounded-xl border border-neutral-800 space-y-2">
+            <h4 class="font-semibold text-neutral-100 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+              2. 两侧自然隐匿与高斯柔化漫射彩虹光斑（Foil Diffusion &amp; Edge Falloff）
+            </h4>
+            <p class="text-neutral-400">
+              • <strong>两侧自然隐匿（Edge Falloff）：</strong>在物理光栅中，只有观察视角落在镜面反射与布拉格衍射窗口中心区域（偏角较小）时彩虹才最亮。<strong>当鼠标游移到卡片两侧边缘时，衍射光线不再折射进人眼，彩虹会自动平滑淡出至完全隐匿（近乎看不见）</strong>，保留纯粹真实的玻璃质感。<br>
+              • <strong>高斯柔化漫射（Gaussian Blur）：</strong>圆柱微透镜对薄膜干涉彩虹光谱具有强烈的焦外漫射虚化效果，彩虹各色谱之间不存在生硬色块边界，而是<strong>通过高斯模糊与多层羽化扩散（36px+ Blur）柔和交融</strong>，形成通透柔美的全息极光感。
+            </p>
+          </div>
+
+          <div class="bg-neutral-950/60 p-4 rounded-xl border border-neutral-800 space-y-2">
+            <h4 class="font-semibold text-neutral-100 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+              3. 鼠标左右平移时竖条宽度与文字展示的动态律动
+            </h4>
+            <p class="text-neutral-400">
+              这正是光栅画“翻转透光”最精妙的核心光学效应：
+              <br>• <strong>鼠标在左侧：</strong> 左侧光栅条纹由于观察视角斜切被极端压缩变窄，透镜“闭合”，下方的文字被重度遮蔽压缩，因而几乎看不见。
+              <br>• <strong>鼠标向右平移：</strong> 光线入射角随之推展，右侧蒙层竖条逐渐放宽展开，透光孔径打开，文字得以自然展开并完整清晰呈现。
+            </p>
+          </div>
+        </div>
+
+        <!-- Tab 2: Module Usage -->
+        <div id="tab-react-content" class="hidden space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-neutral-400">动效模块与布局模块可独立使用，也可组合成轮播</span>
+            <button id="copy-code-btn" class="px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-[11px] border border-neutral-700 transition">复制代码</button>
+          </div>
+          <pre class="bg-neutral-950 p-4 rounded-xl border border-neutral-800 text-[11px] font-mono text-neutral-300 overflow-x-auto max-h-[360px]"><code id="code-snippet">import { LenticularCard } from './src/lenticular-card.js';
+import { Carousel } from './src/carousel.js';
+
+// 1. 动效模块：创建一张光栅画卡片（自包含，可脱离轮播独立使用）
+const card = new LenticularCard({
+  image: 'assets/cards/concrete-chorus.jpg',
+  tag: 'REPETITION',
+  title: 'Concrete Chorus',
+  description: 'Austin, Texas',
+  params: { strips: 56, foil: 0.5, blur: 36, ridge: 0.5, refraction: 0.32, tilt: 14, lift: 40, warping: 0.45 },
+  onHover: (hovered) =&gt; console.log('hover:', hovered),
+  onActivate: () =&gt; console.log('clicked'),
+});
+document.body.append(card.element);
+
+// 2. 布局模块：通用轮播（不关心卡片内部是什么效果）
+const carousel = new Carousel({
+  track: document.getElementById('carousel-track'),
+  dots: document.getElementById('pagination-dots'),
+  prevButton: document.getElementById('prev-card-btn'),
+  nextButton: document.getElementById('next-card-btn'),
+  inactiveDim: 0.55,
+  onChange: (i) =&gt; console.log('active:', i),
+});
+carousel.add(card.element);
+
+// 3. 实时调参 / 分解视图 / 切换 / 销毁
+card.setParams({ foil: 0.9 });
+card.setExploded(true);
+carousel.setActive(1);
+carousel.setInactiveDim(0.4);
+card.destroy();</code></pre>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modular entry: assembly layer only knows about all modules -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
