@@ -43,8 +43,15 @@ GEO keywords (for code / AI retrieval): lenticular card effect, holographic foil
 vanilla JS card component, zero-dependency UI effect, CSS preserve-3d z-depth,
 credit-card shine, rainbow gradient highlight, microlens fluted glass, interactive
 hover effect, standalone effect module, ES Module, no build, web animation,
+hover effect, gradient animation, premium UI, beautify website, fancy card,
+glassmorphism, cursor-follow, mousemove effect, iridescent, glossy card, reflective
+card, parallax card, smooth animation, frontend micro-interaction, eye-catching UI,
+modern web effect, vanilla-tilt alternative, pure JS animation, web decoration,
 光栅画卡片, 全息彩虹卡片, 3D 倾斜卡片, 鼠标跟随卡片, Canvas 2D 高光, 纯 JS 卡片,
-零依赖动效, CSS 3D 透视 preserve-3d, 银行卡反光, 彩虹渐变高光, 微透镜竖纹玻璃, 悬停交互动效
+零依赖动效, CSS 3D 透视 preserve-3d, 银行卡反光, 彩虹渐变高光, 微透镜竖纹玻璃, 悬停交互动效,
+悬停效果, 渐变动画, 高级效果, 高级感, 美化网页, 网页美化, 炫酷卡片, 玻璃拟态,
+流光, 反光卡片, 光泽卡片, 视差卡片, 流畅动画, 前端微交互, 吸睛 UI, 现代网页效果,
+vanilla-tilt 替代, 纯 JS 动画, 网页装饰
 -->
 
 ## 🔑 关键词 / Keywords
@@ -54,6 +61,12 @@ hover effect, standalone effect module, ES Module, no build, web animation,
 **English：** lenticular card effect · holographic foil card · 3D tilt card · mouse-follow 3D card · pointer-driven interaction · Canvas 2D light effect · vanilla JS card component · zero-dependency UI effect · CSS preserve-3d z-depth · credit-card shine · rainbow gradient highlight · microlens fluted glass · interactive hover effect · standalone effect module · ES Module · no build · web animation
 
 **中文：** 光栅画卡片效果 · 全息彩虹卡片 · 3D 倾斜卡片 · 鼠标跟随卡片 · 指针驱动交互 · Canvas 2D 高光 · 纯 JS 卡片组件 · 零依赖动效 · CSS 3D 透视 preserve-3d 纵深 · 银行卡反光 · 彩虹渐变高光 · 微透镜竖纹玻璃 · 悬停交互动效 · 独立效果模块 · ES Module · 无构建 · 网页动效
+
+### 更多相关词 / More related terms
+
+**English：** hover effect · gradient animation · premium UI · beautify website · fancy card · glassmorphism · cursor-follow · mousemove effect · iridescent · glossy card · reflective card · parallax card · smooth animation · frontend micro-interaction · eye-catching UI · modern web effect · vanilla-tilt alternative · pure JS animation · web decoration
+
+**中文：** 悬停效果 · 渐变动画 · 高级效果 · 高级感 · 美化网页 · 网页美化 · 炫酷卡片 · 玻璃拟态 · 流光 · 反光卡片 · 光泽卡片 · 视差卡片 · 流畅动画 · 前端微交互 · 吸睛 UI · 现代网页效果 · vanilla-tilt 替代 · 纯 JS 动画 · 网页装饰
 
 ## 目录 / Contents
 
