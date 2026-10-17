@@ -191,6 +191,13 @@ export class LenticularRenderer {
     const beamCenterX = w * (0.10 + mx * 0.80);
     const pointerX = mx * w;
 
+    // 仅保留跟随彩虹倾斜的高光条（foilTilt 驱动）：竖直白色身体与竖直黑色凹槽已移除，
+    // 卡片上只剩彩虹 + 一道道沿彩虹光带方向的斜高光条，无任何竖向纹理。
+    const tiltRad = params.foilTilt * (Math.PI / 180);
+    const sinT = Math.sin(tiltRad), cosT = Math.cos(tiltRad);
+    const cy = h * 0.5;
+    const halfLen = (w + h) * 0.75;
+
     ctx.save();
     for (let i = 0; i < N; i++) {
       const u = i / N;
@@ -199,32 +206,18 @@ export class LenticularRenderer {
       const sx = p0 * w;
       const sw = Math.max(1.0, (p1 - p0) * w);
 
-      // 指针局部照亮系数：竖条贯穿全高，最近点即指针所在高度，
-      // 故只按水平距离衰减——正对指针的竖条最亮，两侧 smooth 衰减至 0。
+      // 指针局部照亮系数：高光条贯穿全卡，取该条全局水平位置与指针比较，
+      // 正对指针的高光条最亮，两侧 smooth 衰减至 0。
       const distToPointer = Math.abs(sx + sw * 0.5 - pointerX) / w;
       const t = Math.min(1, distToPointer / SLAT_POINTER_FALLOFF);
       const proximity = Math.pow(1 - t, 1.6) * hover;
 
-      // 条纹与移动彩虹光柱的距离 -> 光束影响（两侧边缘同步淡出）
+      // 高光条与移动彩虹光柱的距离 -> 光束影响（两侧边缘同步淡出）
       const distToBeam = Math.abs(sx - beamCenterX) / (w * 0.35);
       const beamInfluence = Math.max(0, 1 - distToBeam) * edgeFade;
 
-      // A. 半透明玻璃 slat 身体：全卡保持可见的玻璃基底（远处 ~0.10），
-      //    指针照亮处显著增亮（近处 ~0.26）——近亮远弱，但不消失
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + (0.10 + 0.14 * proximity) * hover})`;
-      ctx.fillRect(sx, 0, sw, h);
-
-      // 高光条方向跟随 foilTilt（与彩虹光谱流向一致）：90°=竖直，0°=水平，30°=斜
-      // 注意：只有「高光条(B)」跟随彩虹倾斜；薯条本身（身体 A + 凹槽阴影 C）保持竖直，
-      // 这样竖直薯条结构清晰，高光条 subtle 地叠在上面跟随彩虹角度。
-      const tiltRad = params.foilTilt * (Math.PI / 180);
-      const cosT = Math.cos(tiltRad), sinT = Math.sin(tiltRad);
-      const cy = h * 0.5;
-      const halfLen = (w + h) * 0.75;
-
-      // B. 棱镜高光条：与彩虹光带平行（「薯条上的高光条」），subtle 不喧宾夺主；
-      //    关键：彩虹渐变沿 (cosT,sinT)，其等色线（光带走向）垂直该轴 = (-sinT,cosT)，
-      //    故高光条必须沿 (-sinT,cosT)，才能与彩虹重叠而非垂直。
+      // 跟随彩虹光带方向的斜高光条：彩虹渐变沿 (cosT,sinT)，其等色线（光带走向）
+      // 垂直该轴 = (-sinT,cosT)，故高光条沿 (-sinT,cosT) 才能与彩虹重叠而非垂直。
       const ridgeSpec = 0.07 + (0.28 + 0.85 * beamInfluence + 0.9 * proximity) * ridge;
       const tint = Math.max(beamInfluence, proximity) * hover;
       const r = Math.min(255, Math.floor(225 + 30 * Math.sin(u * 12 + dx * 2) * tint));
@@ -235,11 +228,6 @@ export class LenticularRenderer {
       ctx.moveTo(sx + halfLen * sinT, cy - halfLen * cosT);
       ctx.lineTo(sx - halfLen * sinT, cy + halfLen * cosT);
       ctx.stroke();
-
-      // C. 右缘凹槽阴影：保持竖直（薯条边界竖直，勾勒竖直薯条结构）；
-      //    指针照亮处凹槽变浅（光直射下棱镜边缘阴影弱化）
-      ctx.fillStyle = `rgba(0, 0, 0, ${(0.05 + 0.16 * hover) * (1 - 0.5 * proximity)})`;
-      ctx.fillRect(sx + sw - 1.2, 0, 1.2, h);
     }
     ctx.restore();
   }
