@@ -193,40 +193,60 @@ export class LenticularRenderer {
 
     // 仅保留跟随彩虹倾斜的高光条（foilTilt 驱动）：竖直白色身体与竖直黑色凹槽已移除，
     // 卡片上只剩彩虹 + 一道道沿彩虹光带方向的斜高光条，无任何竖向纹理。
+    // 关键修正：高光条改为「沿彩虹光带方向的 2D 平行条纹网格」铺满整卡——
+    // 按法向(perp)等距排布并覆盖四角，倾斜后左上/右下不再留空。
     const tiltRad = params.foilTilt * (Math.PI / 180);
     const sinT = Math.sin(tiltRad), cosT = Math.cos(tiltRad);
-    const cy = h * 0.5;
-    const halfLen = (w + h) * 0.75;
+    const dir = { x: -sinT, y: cosT };   // 高光条走向（与彩虹光带平行）
+    const perp = { x: cosT, y: sinT };   // 高光条法向（即条纹间距方向）
+
+    // 间距基准：tilt=0 时竖向条纹间距 = w/N，任意角度下密度保持一致
+    const sp = w / N;
+
+    // 计算卡片四角在法向上的投影范围，确保平行条纹铺满整卡（含边角不留白）
+    const corners = [[0, 0], [w, 0], [0, h], [w, h]];
+    let minP = Infinity, maxP = -Infinity;
+    for (const [cx, cy] of corners) {
+      const p = cx * perp.x + cy * perp.y;
+      if (p < minP) minP = p;
+      if (p > maxP) maxP = p;
+    }
+    const startO = Math.floor((minP - sp) / sp) * sp;
+    const endO = Math.ceil((maxP + sp) / sp) * sp;
+    const halfLen = w + h; // 条纹足够长，超出卡片由 Canvas clip-path 裁掉
+
+    // 光照基准（沿法向的投影坐标，倾斜后依然正确）：
+    //   彩虹光柱中心线 → oBeam；指针 → oPtr。条纹到二者的法向距离即照亮程度。
+    const oBeam = beamCenterX * cosT + (h * 0.5) * sinT;
+    const oPtr = pointerX * cosT;
 
     ctx.save();
-    for (let i = 0; i < N; i++) {
-      const u = i / N;
-      const p0 = this.slatU(i, N, mx, params.warping, hover);
-      const p1 = this.slatU(i + 1, N, mx, params.warping, hover);
-      const sx = p0 * w;
-      const sw = Math.max(1.0, (p1 - p0) * w);
+    let k = 0;
+    for (let o = startO; o <= endO; o += sp, k++) {
+      // 该条纹经过原点垂直足点 Q = o*perp（perp 为单位向量，故 Q 在法向上的投影恰为 o）
+      const qx = o * perp.x;
+      const qy = o * perp.y;
 
-      // 指针局部照亮系数：高光条贯穿全卡，取该条全局水平位置与指针比较，
-      // 正对指针的高光条最亮，两侧 smooth 衰减至 0。
-      const distToPointer = Math.abs(sx + sw * 0.5 - pointerX) / w;
+      // 指针局部照亮系数：以条纹相对指针的法向距离为准，正对指针最亮、两侧平滑衰减
+      const distToPointer = Math.abs(o - oPtr) / w;
       const t = Math.min(1, distToPointer / SLAT_POINTER_FALLOFF);
       const proximity = Math.pow(1 - t, 1.6) * hover;
 
-      // 高光条与移动彩虹光柱的距离 -> 光束影响（两侧边缘同步淡出）
-      const distToBeam = Math.abs(sx - beamCenterX) / (w * 0.35);
+      // 高光条与移动彩虹光柱的法向距离 -> 光束影响（两侧边缘同步淡出）
+      const distToBeam = Math.abs(o - oBeam) / (w * 0.35);
       const beamInfluence = Math.max(0, 1 - distToBeam) * edgeFade;
 
       // 跟随彩虹光带方向的斜高光条：彩虹渐变沿 (cosT,sinT)，其等色线（光带走向）
       // 垂直该轴 = (-sinT,cosT)，故高光条沿 (-sinT,cosT) 才能与彩虹重叠而非垂直。
       const ridgeSpec = 0.07 + (0.28 + 0.85 * beamInfluence + 0.9 * proximity) * ridge;
       const tint = Math.max(beamInfluence, proximity) * hover;
-      const r = Math.min(255, Math.floor(225 + 30 * Math.sin(u * 12 + dx * 2) * tint));
-      const g = Math.min(255, Math.floor(230 + 25 * Math.sin(u * 12 + 2 + dx * 2) * tint));
+      const r = Math.min(255, Math.floor(225 + 30 * Math.sin(k * 0.5 + dx * 2) * tint));
+      const g = Math.min(255, Math.floor(230 + 25 * Math.sin(k * 0.5 + 2 + dx * 2) * tint));
       ctx.strokeStyle = `rgba(${r}, ${g}, 255, ${ridgeSpec * 0.65})`;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(sx + halfLen * sinT, cy - halfLen * cosT);
-      ctx.lineTo(sx - halfLen * sinT, cy + halfLen * cosT);
+      ctx.moveTo(qx + halfLen * dir.x, qy + halfLen * dir.y);
+      ctx.lineTo(qx - halfLen * dir.x, qy - halfLen * dir.y);
       ctx.stroke();
     }
     ctx.restore();
