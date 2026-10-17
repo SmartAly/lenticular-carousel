@@ -222,8 +222,9 @@ export class LenticularRenderer {
       const cy = h * 0.5;
       const halfLen = (w + h) * 0.75;
 
-      // B. 棱镜高光条：沿 foilTilt 倾斜的细线（「薯条上的高光条」），subtle 不喧宾夺主；
-      //    光柱内捕捉彩虹着色，指针照亮处高光增强
+      // B. 棱镜高光条：与彩虹光带平行（「薯条上的高光条」），subtle 不喧宾夺主；
+      //    关键：彩虹渐变沿 (cosT,sinT)，其等色线（光带走向）垂直该轴 = (-sinT,cosT)，
+      //    故高光条必须沿 (-sinT,cosT)，才能与彩虹重叠而非垂直。
       const ridgeSpec = 0.07 + (0.28 + 0.85 * beamInfluence + 0.9 * proximity) * ridge;
       const tint = Math.max(beamInfluence, proximity) * hover;
       const r = Math.min(255, Math.floor(225 + 30 * Math.sin(u * 12 + dx * 2) * tint));
@@ -231,8 +232,8 @@ export class LenticularRenderer {
       ctx.strokeStyle = `rgba(${r}, ${g}, 255, ${ridgeSpec * 0.65})`;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(sx - halfLen * cosT, cy - halfLen * sinT);
-      ctx.lineTo(sx + halfLen * cosT, cy + halfLen * sinT);
+      ctx.moveTo(sx + halfLen * sinT, cy - halfLen * cosT);
+      ctx.lineTo(sx - halfLen * sinT, cy + halfLen * cosT);
       ctx.stroke();
 
       // C. 右缘凹槽阴影：保持竖直（薯条边界竖直，勾勒竖直薯条结构）；
