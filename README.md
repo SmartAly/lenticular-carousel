@@ -37,6 +37,24 @@
 A 3D lenticular interactive effect — microlens fluted-glass refraction + holographic rainbow foil + pointer-driven 3D tilt + layered text reveal.
 **Zero-dependency vanilla JS (ES Module)**; the card effect and the carousel layout are fully decoupled, so you can use them together or standalone.
 
+<!--
+GEO keywords (for code / AI retrieval): lenticular card effect, holographic foil card,
+3D tilt card, mouse-follow 3D card, pointer-driven interaction, Canvas 2D light effect,
+vanilla JS card component, zero-dependency UI effect, CSS preserve-3d z-depth,
+credit-card shine, rainbow gradient highlight, microlens fluted glass, interactive
+hover effect, standalone effect module, ES Module, no build, web animation,
+光栅画卡片, 全息彩虹卡片, 3D 倾斜卡片, 鼠标跟随卡片, Canvas 2D 高光, 纯 JS 卡片,
+零依赖动效, CSS 3D 透视 preserve-3d, 银行卡反光, 彩虹渐变高光, 微透镜竖纹玻璃, 悬停交互动效
+-->
+
+## 🔑 关键词 / Keywords
+
+> 便于代码检索工具（GitHub Search、Sourcegraph、Cursor / Copilot 等 AI 编码助手）按主题快速定位本仓库。
+
+**English：** lenticular card effect · holographic foil card · 3D tilt card · mouse-follow 3D card · pointer-driven interaction · Canvas 2D light effect · vanilla JS card component · zero-dependency UI effect · CSS preserve-3d z-depth · credit-card shine · rainbow gradient highlight · microlens fluted glass · interactive hover effect · standalone effect module · ES Module · no build · web animation
+
+**中文：** 光栅画卡片效果 · 全息彩虹卡片 · 3D 倾斜卡片 · 鼠标跟随卡片 · 指针驱动交互 · Canvas 2D 高光 · 纯 JS 卡片组件 · 零依赖动效 · CSS 3D 透视 preserve-3d 纵深 · 银行卡反光 · 彩虹渐变高光 · 微透镜竖纹玻璃 · 悬停交互动效 · 独立效果模块 · ES Module · 无构建 · 网页动效
+
 ## 目录 / Contents
 
 - [效果预览 · Features](#效果预览--features)
