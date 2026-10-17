@@ -50,6 +50,9 @@ const LERP_HOVER = 0.14;   // 悬停量跟随
 /** 静止判定阈值：指针与悬停量均收敛且无参数变更时跳过重绘 */
 const IDLE_EPSILON = 0.001;
 
+/** 竖条指针照亮半径（归一化卡片宽）：正对指针的竖条最亮，两侧按此半径 smooth 衰减 */
+const SLAT_POINTER_FALLOFF = 0.25;
+
 /**
  * 文字三行的 Z 纵深（px），顺序为 [tag, title, desc]。
  * 标题最近（视觉主角），描述次之，角标最远——卡片左右倾斜时三行产生
@@ -179,11 +182,13 @@ export class LenticularRenderer {
   /**
    * 2. 竖纹玻璃微透镜光栅蒙层（静止态保持微弱玻璃质感，悬停态动态展开）。
    *    每条竖条由三部分组成：半透明玻璃身体 + 左缘棱镜高光 + 右缘凹槽阴影。
+   *    鼠标正对的竖条被「局部照亮」——离指针越近越亮，向两侧平滑衰减。
    */
   static _paintFlutedSlats(ctx, w, h, mx, dx, hover, edgeFade, params) {
     const N = params.strips;
     const ridge = params.ridge * hover;
     const beamCenterX = w * (0.10 + mx * 0.80);
+    const pointerX = mx * w;
 
     ctx.save();
     for (let i = 0; i < N; i++) {
@@ -193,24 +198,30 @@ export class LenticularRenderer {
       const sx = p0 * w;
       const sw = Math.max(1.0, (p1 - p0) * w);
 
+      // 指针局部照亮系数：竖条贯穿全高，最近点即指针所在高度，
+      // 故只按水平距离衰减——正对指针的竖条最亮，两侧 smooth 衰减至 0。
+      const distToPointer = Math.abs(sx + sw * 0.5 - pointerX) / w;
+      const t = Math.min(1, distToPointer / SLAT_POINTER_FALLOFF);
+      const proximity = Math.pow(1 - t, 1.6) * hover;
+
       // 条纹与移动彩虹光柱的距离 -> 光束影响（两侧边缘同步淡出）
       const distToBeam = Math.abs(sx - beamCenterX) / (w * 0.35);
       const beamInfluence = Math.max(0, 1 - distToBeam) * edgeFade;
 
-      // A. 半透明玻璃 slat 身体（静止 ~0.02，悬停 ~0.06）
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + 0.05 * hover})`;
+      // A. 半透明玻璃 slat 身体：照亮处显著增亮，远处保持微弱玻璃质感
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + (0.05 + 0.13 * proximity) * hover})`;
       ctx.fillRect(sx, 0, sw, h);
 
-      // B. 左缘棱镜微反射：光柱内捕捉彩虹着色，靠近卡片边缘褪为中性玻璃光泽
-      const ridgeSpec = 0.07 + (0.15 + 0.85 * beamInfluence) * ridge;
-      const tint = beamInfluence * hover;
+      // B. 左缘棱镜微反射：光柱内捕捉彩虹着色，指针照亮处高光增强
+      const ridgeSpec = 0.07 + (0.15 + 0.85 * beamInfluence + 0.9 * proximity) * ridge;
+      const tint = Math.max(beamInfluence, proximity) * hover;
       const r = Math.min(255, Math.floor(225 + 30 * Math.sin(u * 12 + dx * 2) * tint));
       const g = Math.min(255, Math.floor(230 + 25 * Math.sin(u * 12 + 2 + dx * 2) * tint));
       ctx.fillStyle = `rgba(${r}, ${g}, 255, ${ridgeSpec * 0.65})`;
       ctx.fillRect(sx, 0, 1.2, h);
 
-      // C. 右缘凹槽阴影：勾勒竖条之间可触摸的肋状边界
-      ctx.fillStyle = `rgba(0, 0, 0, ${0.05 + 0.16 * hover})`;
+      // C. 右缘凹槽阴影：勾勒肋状边界；指针照亮处凹槽变浅（光直射下棱镜边缘阴影弱化）
+      ctx.fillStyle = `rgba(0, 0, 0, ${(0.05 + 0.16 * hover) * (1 - 0.5 * proximity)})`;
       ctx.fillRect(sx + sw - 1.2, 0, 1.2, h);
     }
     ctx.restore();
@@ -280,18 +291,23 @@ export class LenticularCard {
     root.style.width = `${CARD_WIDTH}px`;
     root.style.height = `${CARD_HEIGHT}px`;
 
-    // 注意：card-inner 上不能用 overflow-hidden——该属性在部分引擎（WebKit）
-    // 会强制 transform-style 扁平化，子层的 translateZ 纵深将全部失效。
-    // 圆角裁剪改由各图层自身的 rounded-[14px] 完成，行为全引擎一致。
+    // 注意：card-inner 上不能用 overflow-hidden——该属性会强制
+    // transform-style 扁平化，子层的 translateZ 纵深将全部失效。
+    // 裁剪改由照片 / Canvas 自身的 clip-path 完成，行为全引擎一致。
     const inner = document.createElement('div');
     inner.className = 'card-inner relative w-full h-full rounded-[14px] preserve-3d transition-transform duration-75';
     inner.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.7)';
 
     // 1. 底层照片
+    //    裁剪用 clip-path 而非父级 overflow-hidden：overflow 会强制
+    //    transform-style: flat，整棵子树（含三行文字的 translateZ 纵深）
+    //    全部失效；clip-path 只裁照片自身形状，不影响 3D 渲染上下文。
+    //    照片带 scale/translate 折射视差，四边必须被裁回圆角内。
     const img = document.createElement('img');
     img.src = image;
     img.alt = title;
     img.className = 'card-bg absolute inset-0 w-full h-full object-cover rounded-[14px] transition-transform duration-100 ease-out';
+    img.style.clipPath = 'inset(0 round 14px)';
     img.style.transform = 'scale(1.06)';
 
     // 2. 渐变遮罩（Scrim）
@@ -299,8 +315,11 @@ export class LenticularCard {
     scrim.className = 'card-scrim absolute inset-0 rounded-[14px] bg-gradient-to-t from-black/90 via-black/35 to-black/5 pointer-events-none transition-opacity duration-300';
 
     // 3. 竖纹玻璃光栅与全息彩虹光束 Canvas 蒙层
+    //    clip-path 同照片：光柱绘制溢出四角，需裁回圆角内；
+    //    border-radius 在 mix-blend-screen 下不总可靠，双保险。
     const canvas = document.createElement('canvas');
     canvas.className = 'card-canvas absolute inset-0 w-full h-full rounded-[14px] pointer-events-none mix-blend-screen';
+    canvas.style.clipPath = 'inset(0 round 14px)';
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
 
