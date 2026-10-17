@@ -60,8 +60,8 @@ const SLAT_POINTER_FALLOFF = 0.25;
  */
 const TEXT_LAYER_Z = [64, 64, 64];
 
-/** 文字三行各自的透明度系数（desc 保持原来的 0.8 弱化） */
-const TEXT_LAYER_OPACITY = [1, 1, 0.8];
+/** 文字三行透明度系数（三行统一，保证 3D 倾斜表现完全一致） */
+const TEXT_LAYER_OPACITY = [1, 1, 1];
 
 /** 分解视图下文字整体额外抬升的 Z 基准（与原版 content z=60 的意图一致） */
 const EXPLODED_TEXT_Z = 40;
@@ -334,9 +334,9 @@ export class LenticularCard {
     // 阴影一律用 text-shadow：drop-shadow(filter) 虽不影响元素自身 Z，
     // 但会扁平化其子树，且与 3D 合成路径下行为不一致，统一避免。
     content.innerHTML = `
-      <div class="card-tag text-[10px] font-bold tracking-widest text-neutral-300 uppercase mb-1" style="opacity: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.1), 0 1px 1px rgba(0,0,0,0.06)">${tag}</div>
+      <div class="card-tag text-[10px] font-bold tracking-widest text-neutral-300 uppercase mb-1" style="opacity: 0; text-shadow: 0 4px 3px rgba(0,0,0,0.07), 0 2px 2px rgba(0,0,0,0.06)">${tag}</div>
       <h3 class="card-title text-xl font-bold tracking-tight text-white leading-tight" style="opacity: 0; text-shadow: 0 4px 3px rgba(0,0,0,0.07), 0 2px 2px rgba(0,0,0,0.06)">${title}</h3>
-      <p class="card-desc text-[11px] text-neutral-400 mt-1" style="opacity: 0">${description}</p>`;
+      <p class="card-desc text-[11px] text-neutral-400 mt-1" style="opacity: 0; text-shadow: 0 4px 3px rgba(0,0,0,0.07), 0 2px 2px rgba(0,0,0,0.06)">${description}</p>`;
 
     // 5. 分解视图徽标
     const badge = document.createElement('div');
