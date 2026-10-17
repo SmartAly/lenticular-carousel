@@ -1,9 +1,7 @@
 # Lenticular Carousel
 
-3D 光栅画（Lenticular）交互动效 —— 微透镜竖纹折射 + 全息彩虹渐变高光 + 鼠标跟随 3D 倾斜。
+3D 光栅画（Lenticular）交互动效 —— 微透镜竖纹折射 + 全息彩虹渐变高光 + 鼠标跟随 3D 倾斜 + 文字逐层纵深揭示。
 **零依赖 vanilla JS（ES Module）**，卡片动效与轮播布局完全解耦，可整体使用，也可单独拆出使用。
-
-> 复刻自 React Bits Pro 的 Lenticular Carousel 组件，并以原生 JS 重新架构。
 
 **👉 在线预览：https://smartaly.github.io/lenticular-carousel/** （GitHub Pages，打开即玩，无需安装）
 
@@ -15,7 +13,7 @@
 - 鼠标移到卡片**左右边缘**：彩虹高光按衍射物理平滑衰减至完全隐匿，只留中性玻璃质感
 - 悬停时卡片 **3D 倾斜 + Z 轴抬升**，底层照片带折射视差
 - 支持**图层分解视图**（照片 / 光栅 Canvas / 文字沿 Z 轴分离）
-- 内置**官方参数实时调试面板**（9 个 props 滑杆 + 4 套预设）
+- 内置**效果参数实时调试面板**（9 个滑杆 + 4 套预设）
 
 ## 快速开始
 
@@ -127,6 +125,6 @@ card.destroy();                  // 销毁并退出 ticker
 
 ### English Summary
 
-A zero-dependency vanilla-JS reimplementation of the React Bits Pro "Lenticular Carousel": a 3D lenticular-glass card effect with microlens fluted slats, holographic rainbow foil highlights, pointer-driven 3D tilt and text reveal. The effect layer (`LenticularCard` + pure `LenticularRenderer`) and the layout layer (`Carousel`) are fully decoupled and usable independently. Run `npm start` and open http://localhost:5173.
+A zero-dependency vanilla-JS lenticular-glass card carousel: microlens fluted slats that light up near the pointer, holographic rainbow foil highlights, pointer-driven 3D tilt and per-line text reveal with real Z-depth parallax. The effect layer (`LenticularCard` + pure `LenticularRenderer`) and the layout layer (`Carousel`) are fully decoupled and usable independently. Run `npm start` and open http://localhost:5173.
 
 Live demo: https://smartaly.github.io/lenticular-carousel/

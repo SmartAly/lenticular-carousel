@@ -126,12 +126,12 @@ function switchTab(showPrinciple) {
   const on = 'py-3 px-3 border-b-2 border-purple-500 text-purple-400 font-medium';
   const off = 'py-3 px-3 border-b-2 border-transparent text-neutral-400 hover:text-neutral-200 font-medium';
   $('tab-principle-btn').className = showPrinciple ? on : off;
-  $('tab-react-btn').className = showPrinciple ? off : on;
+  $('tab-usage-btn').className = showPrinciple ? off : on;
   $('tab-principle-content').classList.toggle('hidden', !showPrinciple);
-  $('tab-react-content').classList.toggle('hidden', showPrinciple);
+  $('tab-usage-content').classList.toggle('hidden', showPrinciple);
 }
 $('tab-principle-btn').addEventListener('click', () => switchTab(true));
-$('tab-react-btn').addEventListener('click', () => switchTab(false));
+$('tab-usage-btn').addEventListener('click', () => switchTab(false));
 
 // ------------------------------------------------------------
 // 3e. 复制代码
