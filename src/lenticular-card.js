@@ -190,6 +190,12 @@ export class LenticularRenderer {
     const ridge = params.ridge * hover;
     const beamCenterX = w * (0.10 + mx * 0.80);
     const pointerX = mx * w;
+    // 高光角度与彩虹光束保持一致：同一个 foilTilt 驱动（90°=纯竖直，即原始行为）
+    const tiltRad = params.foilTilt * (Math.PI / 180);
+    const cosT = Math.cos(tiltRad);
+    const sinT = Math.sin(tiltRad);
+    const cy = h * 0.5;
+    const halfLen = (w + h) * 0.75; // 斜线半长，保证任意角度下贯穿整卡
 
     ctx.save();
     for (let i = 0; i < N; i++) {
@@ -214,17 +220,27 @@ export class LenticularRenderer {
       ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + (0.10 + 0.14 * proximity) * hover})`;
       ctx.fillRect(sx, 0, sw, h);
 
-      // B. 左缘棱镜微反射：光柱内捕捉彩虹着色，指针照亮处高光增强
+      // B. 棱镜高光线：过竖条左缘、沿 foilTilt 方向的斜线（与彩虹光束轴平行），
+      //    光柱内捕捉彩虹着色，指针照亮处高光增强
       const ridgeSpec = 0.07 + (0.28 + 0.85 * beamInfluence + 0.9 * proximity) * ridge;
       const tint = Math.max(beamInfluence, proximity) * hover;
       const r = Math.min(255, Math.floor(225 + 30 * Math.sin(u * 12 + dx * 2) * tint));
       const g = Math.min(255, Math.floor(230 + 25 * Math.sin(u * 12 + 2 + dx * 2) * tint));
-      ctx.fillStyle = `rgba(${r}, ${g}, 255, ${ridgeSpec * 0.65})`;
-      ctx.fillRect(sx, 0, 1.2, h);
+      ctx.strokeStyle = `rgba(${r}, ${g}, 255, ${ridgeSpec * 0.65})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(sx - halfLen * cosT, cy - halfLen * sinT);
+      ctx.lineTo(sx + halfLen * cosT, cy + halfLen * sinT);
+      ctx.stroke();
 
-      // C. 右缘凹槽阴影：勾勒肋状边界；指针照亮处凹槽变浅（光直射下棱镜边缘阴影弱化）
-      ctx.fillStyle = `rgba(0, 0, 0, ${(0.05 + 0.16 * hover) * (1 - 0.5 * proximity)})`;
-      ctx.fillRect(sx + sw - 1.2, 0, 1.2, h);
+      // C. 凹槽阴影线：勾勒肋状边界，方向同高光线（与彩虹角度一致）；
+      //    指针照亮处凹槽变浅（光直射下棱镜边缘阴影弱化）
+      ctx.strokeStyle = `rgba(0, 0, 0, ${(0.05 + 0.16 * hover) * (1 - 0.5 * proximity)})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(sx + sw - 1.2 - halfLen * cosT, cy - halfLen * sinT);
+      ctx.lineTo(sx + sw - 1.2 + halfLen * cosT, cy + halfLen * sinT);
+      ctx.stroke();
     }
     ctx.restore();
   }
