@@ -37,33 +37,9 @@ src/
 assets/cards/              演示图片（JPEG）
 ```
 
-```
-                ┌────────────────────────────┐
-                │  动效模块 lenticular-card  │
-                │  ┌──────────────────────┐  │
-                │  │ LenticularRenderer   │  │  ← 纯 Canvas 绘制
-                │  │ (ctx,w,h,state,params)│ │    无 DOM / 无事件 / 可单测
-                │  └──────────┬───────────┘  │
-                │  ┌──────────▼───────────┐  │
-                │  │ LenticularCard       │  │  ← DOM 外壳
-                │  │ 事件 + rAF 插值       │  │    指针追踪 / 3D 变换 / 文字编排
-                │  │ + 3D 变换 + 文字编排  │  │
-                │  └──────────┬───────────┘  │
-                └─────────────┼──────────────┘
-                  element     │  setActive / setParams / setExploded
-                  onHover / onActivate
-                              ▼
-                ┌────────────────────────────┐
-                │  卡片模块 carousel         │  ← 只认 HTMLElement
-                │  轨道 / 导航 / 分页 /      │    不关心卡片里是什么效果
-                │  激活层级 dimming          │
-                └─────────────┬──────────────┘
-                              │ onChange(index)
-                              ▼
-                ┌────────────────────────────┐
-                │  装配层 main.js            │  ← 数据 + 调参面板 + 弹窗
-                └────────────────────────────┘
-```
+![Lenticular Carousel 模块架构：动效模块与布局模块完全解耦](./docs/architecture.svg)
+
+*架构图源码：[docs/architecture.svg](./docs/architecture.svg)（亮 / 暗色主题自适应）*
 
 ### 解耦契约
 
