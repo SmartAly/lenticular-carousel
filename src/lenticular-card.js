@@ -190,38 +190,50 @@ export class LenticularRenderer {
     const ridge = params.ridge * hover;
     const beamCenterX = w * (0.10 + mx * 0.80);
     const pointerX = mx * w;
-    // 高光角度与彩虹光束保持一致：同一个 foilTilt 驱动（90°=纯竖直，即原始行为）
+    // 整条薯条（身体+高光+阴影）按 foilTilt 倾斜，方向与彩虹光谱流向一致
+    // （foilTilt=90 → 竖直，即原始行为；foilTilt=0 → 水平）
     const tiltRad = params.foilTilt * (Math.PI / 180);
-    const cosT = Math.cos(tiltRad);
-    const sinT = Math.sin(tiltRad);
-    const cy = h * 0.5;
-    const halfLen = (w + h) * 0.75; // 斜线半长，保证任意角度下贯穿整卡
+    const fx = Math.cos(tiltRad), fy = Math.sin(tiltRad);   // 薯条长轴方向 = 彩虹光谱流向
+    const px = -Math.sin(tiltRad), py = Math.cos(tiltRad);  // 薯条间距方向（垂直长轴）
+    const cx = w * 0.5, cy = h * 0.5;
+    const coverage = (w + h) * 0.62;   // 沿间距方向铺满整卡的覆盖范围
+    const bigLen = (w + h) * 0.75;     // 沿长轴半长，保证贯穿整卡
 
     ctx.save();
     for (let i = 0; i < N; i++) {
       const u = i / N;
       const p0 = this.slatU(i, N, mx, params.warping, hover);
       const p1 = this.slatU(i + 1, N, mx, params.warping, hover);
-      const sx = p0 * w;
-      const sw = Math.max(1.0, (p1 - p0) * w);
+      const centerU = (p0 + p1) * 0.5;
+      const offPerp = (centerU - 0.5) * coverage;          // 沿间距方向的偏移
+      const Cx = cx + offPerp * px;
+      const Cy = cy + offPerp * py;
+      const sw = Math.max(1.0, (p1 - p0) * w);              // 薯条宽度（间距方向）
+      const hw = sw * 0.5;
+      const lx = bigLen * fx, ly = bigLen * fy;             // 长轴半向量
 
-      // 指针局部照亮系数：竖条贯穿全高，最近点即指针所在高度，
-      // 故只按水平距离衰减——正对指针的竖条最亮，两侧 smooth 衰减至 0。
-      const distToPointer = Math.abs(sx + sw * 0.5 - pointerX) / w;
+      // 指针局部照亮：薯条贯穿全卡，取该条在全局的水平位置与指针比较
+      const distToPointer = Math.abs(Cx - pointerX) / w;
       const t = Math.min(1, distToPointer / SLAT_POINTER_FALLOFF);
       const proximity = Math.pow(1 - t, 1.6) * hover;
 
       // 条纹与移动彩虹光柱的距离 -> 光束影响（两侧边缘同步淡出）
-      const distToBeam = Math.abs(sx - beamCenterX) / (w * 0.35);
+      const distToBeam = Math.abs(Cx - beamCenterX) / (w * 0.35);
       const beamInfluence = Math.max(0, 1 - distToBeam) * edgeFade;
 
-      // A. 半透明玻璃 slat 身体：全卡保持可见的玻璃基底（远处 ~0.10），
-      //    指针照亮处显著增亮（近处 ~0.26）——近亮远弱，但不消失
+      // A. 玻璃身体（平行四边形）：整条薯条随 foilTilt 倾斜，不再有竖直矩形高光
+      const ax = Cx - hw * px, ay = Cy - hw * py;           // 左缘中心
+      const bx = Cx + hw * px, by = Cy + hw * py;           // 右缘中心
       ctx.fillStyle = `rgba(255, 255, 255, ${0.02 + (0.10 + 0.14 * proximity) * hover})`;
-      ctx.fillRect(sx, 0, sw, h);
+      ctx.beginPath();
+      ctx.moveTo(ax - lx, ay - ly);
+      ctx.lineTo(bx - lx, by - ly);
+      ctx.lineTo(bx + lx, by + ly);
+      ctx.lineTo(ax + lx, ay + ly);
+      ctx.closePath();
+      ctx.fill();
 
-      // B. 棱镜高光线：过竖条左缘、沿 foilTilt 方向的斜线（与彩虹光束轴平行），
-      //    光柱内捕捉彩虹着色，指针照亮处高光增强
+      // B. 左缘棱镜高光（沿长轴的长边，方向=彩虹光谱流向）
       const ridgeSpec = 0.07 + (0.28 + 0.85 * beamInfluence + 0.9 * proximity) * ridge;
       const tint = Math.max(beamInfluence, proximity) * hover;
       const r = Math.min(255, Math.floor(225 + 30 * Math.sin(u * 12 + dx * 2) * tint));
@@ -229,17 +241,16 @@ export class LenticularRenderer {
       ctx.strokeStyle = `rgba(${r}, ${g}, 255, ${ridgeSpec * 0.65})`;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(sx - halfLen * cosT, cy - halfLen * sinT);
-      ctx.lineTo(sx + halfLen * cosT, cy + halfLen * sinT);
+      ctx.moveTo(ax - lx, ay - ly);
+      ctx.lineTo(ax + lx, ay + ly);
       ctx.stroke();
 
-      // C. 凹槽阴影线：勾勒肋状边界，方向同高光线（与彩虹角度一致）；
-      //    指针照亮处凹槽变浅（光直射下棱镜边缘阴影弱化）
+      // C. 右缘凹槽阴影（沿长轴的长边）
       ctx.strokeStyle = `rgba(0, 0, 0, ${(0.05 + 0.16 * hover) * (1 - 0.5 * proximity)})`;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(sx + sw - 1.2 - halfLen * cosT, cy - halfLen * sinT);
-      ctx.lineTo(sx + sw - 1.2 + halfLen * cosT, cy + halfLen * sinT);
+      ctx.moveTo(bx - lx, by - ly);
+      ctx.lineTo(bx + lx, by + ly);
       ctx.stroke();
     }
     ctx.restore();
