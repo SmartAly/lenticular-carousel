@@ -336,7 +336,7 @@ export class LenticularCard {
     content.innerHTML = `
       <div class="card-tag text-[10px] font-bold tracking-widest text-neutral-300 uppercase mb-1" style="opacity: 0; text-shadow: 0 4px 3px rgba(0,0,0,0.07), 0 2px 2px rgba(0,0,0,0.06)">${tag}</div>
       <h3 class="card-title text-xl font-bold tracking-tight text-white leading-tight" style="opacity: 0; text-shadow: 0 4px 3px rgba(0,0,0,0.07), 0 2px 2px rgba(0,0,0,0.06)">${title}</h3>
-      <p class="card-desc text-[11px] font-bold text-neutral-300 mt-1" style="opacity: 0; text-shadow: 0 4px 3px rgba(0,0,0,0.07), 0 2px 2px rgba(0,0,0,0.06)">${description}</p>`;
+      <p class="card-desc text-[11px] font-bold tracking-normal text-neutral-300 mt-1" style="opacity: 0; text-shadow: 0 4px 3px rgba(0,0,0,0.07), 0 2px 2px rgba(0,0,0,0.06)">${description}</p>`;
 
     // 5. 分解视图徽标
     const badge = document.createElement('div');
